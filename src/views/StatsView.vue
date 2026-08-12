@@ -8,6 +8,19 @@
     <div class="screen-body">
       <div class="level-label">{{ level?.name }}</div>
 
+      <!-- Last-5 summary -->
+      <div v-if="sessions.length > 0" class="summary-box">
+        <div class="summary-box-title">{{ t.last5Runs }}</div>
+        <div class="summary-box-row">
+          <span class="sb-label">{{ t.avgTotalTime }}</span>
+          <span class="sb-value">{{ formatTime(last5AvgTotalTime) }}</span>
+        </div>
+        <div class="summary-box-row">
+          <span class="sb-label">{{ t.avgTimePerQuestion }}</span>
+          <span class="sb-value">{{ formatTime(last5AvgPerQuestion) }}</span>
+        </div>
+      </div>
+
       <!-- Empty state -->
       <div v-if="sessions.length === 0" class="empty-state">
         <div class="empty-icon">📊</div>
@@ -64,6 +77,16 @@ const { getSessionsForProfileAndLevel } = useStats()
 const level = computed(() => getLevel(levelId))
 const sessions = computed(() => getSessionsForProfileAndLevel(profileId, levelId))
 
+const last5 = computed(() => sessions.value.slice(0, 5))
+const last5AvgTotalTime = computed(() => {
+  if (!last5.value.length) return 0
+  return Math.round(last5.value.reduce((s, r) => s + r.totalTimeMs, 0) / last5.value.length)
+})
+const last5AvgPerQuestion = computed(() => {
+  if (!last5.value.length) return 0
+  return Math.round(last5.value.reduce((s, r) => s + r.totalTimeMs / r.questionCount, 0) / last5.value.length)
+})
+
 function correctCount(session) {
   return session.answers.filter(a => a.givenAnswer === a.correctAnswer).length
 }
@@ -95,6 +118,42 @@ function scoreClass(session) {
 </script>
 
 <style scoped>
+.summary-box {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-box-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.summary-box-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sb-label {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.sb-value {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
 .level-label {
   font-size: var(--font-size-xl);
   font-weight: 700;

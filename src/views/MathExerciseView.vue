@@ -32,6 +32,22 @@
       <div class="screen-header">
         <h1 class="screen-title">🎉 {{ t.exerciseDone }}</h1>
       </div>
+
+      <div class="summary-actions">
+        <button class="summary-action-btn" @click="goBack">
+          <span class="sa-icon">📋</span>
+          <span class="sa-label">{{ t.backToLevels }}</span>
+        </button>
+        <button class="summary-action-btn" @click="repeatLevel">
+          <span class="sa-icon">🔁</span>
+          <span class="sa-label">{{ t.repeatLevel }}</span>
+        </button>
+        <button class="summary-action-btn" :disabled="!nextLevel" @click="goNextLevel">
+          <span class="sa-icon">⏭️</span>
+          <span class="sa-label">{{ t.nextLevel }}</span>
+        </button>
+      </div>
+
       <div class="screen-body summary-body">
         <div class="summary-card">
           <div class="summary-row">
@@ -63,8 +79,6 @@
             <span class="ans-time">{{ (ans.timeMs / 1000).toFixed(1) }}{{ t.seconds }}</span>
           </div>
         </div>
-
-        <button class="btn-primary back-levels-btn" @click="goBack">{{ t.backToLevels }}</button>
       </div>
     </template>
 
@@ -89,13 +103,15 @@ import { t } from '../i18n/nl.js'
 import { useLevels } from '../stores/useLevels.js'
 import { useStats } from '../stores/useStats.js'
 import { useProfiles } from '../stores/useProfiles.js'
+import { usePreferences } from '../stores/usePreferences.js'
 import CustomKeyboard from '../components/CustomKeyboard.vue'
 
 const router = useRouter()
 const route = useRoute()
 const { profileId, levelId } = route.params
 
-const { getLevel } = useLevels()
+const { getLevel, sortedLevels, markPlayed } = useLevels()
+const { setLastUsedLevel } = usePreferences()
 const { saveSession } = useStats()
 const { getProfile } = useProfiles()
 
@@ -108,41 +124,60 @@ function pickRandom(arr) {
 }
 
 function generateQuestion(level) {
-  const op = pickRandom(level.operators)
+  const onlyPositive = level.onlyPositiveResults ?? true
+  const onlyInteger = level.onlyIntegerResults ?? true
   const digits = level.digits
+  const nonZeroDigits = digits.filter(d => d > 0)
 
-  if (op === '/') {
-    // pick b and c from digits, a = b * c
-    let b, c, a
-    let attempts = 0
-    do {
-      b = pickRandom(digits.filter(d => d > 0)) // avoid divide by zero
-      c = pickRandom(digits)
-      a = b * c
-      attempts++
-    } while (attempts < 50 && (digits.length === 0 || b === 0))
-    return {
-      a, b, c,
-      op,
-      // display: a ÷ b = ?
-      display: `${a} ÷ ${b} = ?`,
-      answer: c,
+  const MAX_ATTEMPTS = 100
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const op = pickRandom(level.operators)
+    let a, b, answer, display
+
+    if (op === '/') {
+      if (nonZeroDigits.length === 0) continue
+      b = pickRandom(nonZeroDigits)
+      if (onlyInteger) {
+        // guarantee integer result: pick c from digits, a = b * c
+        const c = pickRandom(digits)
+        a = b * c
+        answer = c
+      } else {
+        a = pickRandom(digits)
+        answer = a / b
+        if (onlyInteger && !Number.isInteger(answer)) continue
+      }
+      if (onlyPositive && answer < 0) continue
+      display = `${a} ÷ ${b} = ?`
+    } else if (op === '-') {
+      a = pickRandom(digits)
+      b = pickRandom(digits)
+      answer = a - b
+      if (onlyPositive && answer < 0) { [a, b] = [b, a]; answer = a - b }
+      display = `${a} − ${b} = ?`
+    } else if (op === '+') {
+      a = pickRandom(digits)
+      b = pickRandom(digits)
+      answer = a + b
+      if (onlyPositive && answer < 0) continue
+      display = `${a} + ${b} = ?`
+    } else if (op === '*') {
+      a = pickRandom(digits)
+      b = pickRandom(digits)
+      answer = a * b
+      if (onlyPositive && answer < 0) continue
+      display = `${a} × ${b} = ?`
     }
+
+    if (onlyInteger && !Number.isInteger(answer)) continue
+    return { a, b, op, display, answer }
   }
 
-  let a = pickRandom(digits)
-  let b = pickRandom(digits)
-
-  if (op === '-') {
-    if (a < b) [a, b] = [b, a]
-    return { a, b, op, display: `${a} − ${b} = ?`, answer: a - b }
-  }
-  if (op === '+') {
-    return { a, b, op, display: `${a} + ${b} = ?`, answer: a + b }
-  }
-  if (op === '*') {
-    return { a, b, op, display: `${a} × ${b} = ?`, answer: a * b }
-  }
+  // fallback: simple addition that always satisfies constraints
+  const a = pickRandom(digits.length ? digits : [1])
+  const b = pickRandom(digits.length ? digits : [1])
+  return { a, b, op: '+', display: `${a} + ${b} = ?`, answer: a + b }
 }
 
 function generateQuestions(level) {
@@ -168,6 +203,10 @@ let totalTimeMs = ref(0)
 const currentQuestion = computed(() => questions.value[currentIndex.value])
 const progressPct = computed(() => (currentIndex.value / questions.value.length) * 100)
 const correctCount = computed(() => sessionAnswers.value.filter(a => a.givenAnswer === a.correctAnswer).length)
+const nextLevel = computed(() => {
+  const idx = sortedLevels.value.findIndex(l => l.id === levelId)
+  return idx !== -1 && idx + 1 < sortedLevels.value.length ? sortedLevels.value[idx + 1] : null
+})
 const avgTimeMs = computed(() =>
   sessionAnswers.value.length > 0
     ? Math.round(sessionAnswers.value.reduce((s, a) => s + a.timeMs, 0) / sessionAnswers.value.length)
@@ -241,6 +280,7 @@ function finishSession() {
   totalTimeMs.value = sessionAnswers.value.reduce((s, a) => s + a.timeMs, 0)
   done.value = true
 
+  markPlayed(levelId)
   saveSession({
     profileId,
     levelId,
@@ -265,6 +305,17 @@ function confirmQuit() {
 
 function goBack() {
   router.push({ name: 'levels', params: { profileId } })
+}
+
+function repeatLevel() {
+  router.push({ name: 'play', params: { profileId, levelId } })
+}
+
+function goNextLevel() {
+  if (!nextLevel.value) return
+  const nl = nextLevel.value
+  setLastUsedLevel(profileId, 'rekenen', nl.id)
+  router.push({ name: 'play', params: { profileId, levelId: nl.id } })
 }
 </script>
 
@@ -349,6 +400,8 @@ function goBack() {
 .keyboard-wrap {
   flex-shrink: 0;
   padding: 0 12px 12px;
+  display: flex;
+  justify-content: center;
 }
 
 /* Summary */
@@ -416,10 +469,47 @@ function goBack() {
 .given-bad { color: var(--color-error); }
 .ans-time { color: var(--color-text-muted); font-size: 14px; min-width: 50px; text-align: right; }
 
-.back-levels-btn {
-  font-size: var(--font-size-lg);
-  padding: 16px;
+.summary-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px 0;
+  flex-shrink: 0;
+}
+
+.summary-action-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius);
-  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+  color: var(--color-text);
+  min-height: 80px;
+}
+
+.summary-action-btn:active {
+  transform: scale(0.95);
+}
+
+.summary-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sa-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.sa-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-text-muted);
 }
 </style>

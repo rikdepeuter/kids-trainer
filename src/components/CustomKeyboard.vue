@@ -1,24 +1,22 @@
 <template>
   <div class="keyboard">
-    <div class="keyboard-row">
-      <button class="key-btn digit" @click="$emit('input', 7)">7</button>
-      <button class="key-btn digit" @click="$emit('input', 8)">8</button>
-      <button class="key-btn digit" @click="$emit('input', 9)">9</button>
-    </div>
-    <div class="keyboard-row">
-      <button class="key-btn digit" @click="$emit('input', 4)">4</button>
-      <button class="key-btn digit" @click="$emit('input', 5)">5</button>
-      <button class="key-btn digit" @click="$emit('input', 6)">6</button>
-    </div>
-    <div class="keyboard-row">
-      <button class="key-btn digit" @click="$emit('input', 1)">1</button>
-      <button class="key-btn digit" @click="$emit('input', 2)">2</button>
-      <button class="key-btn digit" @click="$emit('input', 3)">3</button>
-    </div>
-    <div class="keyboard-row">
-      <button class="key-btn backspace" @click="$emit('backspace')">{{ t.backspace }}</button>
-      <button class="key-btn digit" @click="$emit('input', 0)">0</button>
-      <button class="key-btn ok" @click="$emit('ok')">{{ t.ok }}</button>
+    <div class="keyboard-main">
+      <div class="digit-grid">
+        <button class="key-btn digit" @click="$emit('input', 1)">1</button>
+        <button class="key-btn digit" @click="$emit('input', 2)">2</button>
+        <button class="key-btn digit" @click="$emit('input', 3)">3</button>
+        <button class="key-btn digit" @click="$emit('input', 4)">4</button>
+        <button class="key-btn digit" @click="$emit('input', 5)">5</button>
+        <button class="key-btn digit" @click="$emit('input', 6)">6</button>
+        <button class="key-btn digit" @click="$emit('input', 7)">7</button>
+        <button class="key-btn digit" @click="$emit('input', 8)">8</button>
+        <button class="key-btn digit" @click="$emit('input', 9)">9</button>
+        <button class="key-btn digit" @click="$emit('input', 0)">0</button>
+      </div>
+      <div class="action-col">
+        <button class="key-btn backspace" @click="$emit('backspace')">{{ t.backspace }}</button>
+        <button class="key-btn ok" @click="$emit('ok')">{{ t.ok }}</button>
+      </div>
     </div>
   </div>
 </template>
@@ -31,16 +29,27 @@ defineEmits(['input', 'backspace', 'ok'])
 
 <style scoped>
 .keyboard {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   padding: 12px;
   background: rgba(0,0,0,0.2);
   border-radius: var(--radius);
+  width: 360px;
 }
 
-.keyboard-row {
+.keyboard-main {
   display: flex;
+  gap: 10px;
+}
+
+.digit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  flex: 1;
+}
+
+.action-col {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
@@ -73,6 +82,7 @@ defineEmits(['input', 'backspace', 'ok'])
   background: var(--color-warning);
   color: #fff;
   font-size: var(--font-size-xl);
+  flex: 1;
 }
 
 .key-btn.ok {
@@ -80,5 +90,6 @@ defineEmits(['input', 'backspace', 'ok'])
   color: #fff;
   font-size: var(--font-size-xl);
   font-weight: 800;
+  flex: 1;
 }
 </style>

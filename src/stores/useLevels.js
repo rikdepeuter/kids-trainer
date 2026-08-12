@@ -9,6 +9,8 @@ const BUILTIN_LEVEL = {
   operators: ['+', '-', '*', '/'],
   digits: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
   questionCount: 20,
+  onlyPositiveResults: true,
+  onlyIntegerResults: true,
 }
 
 function loadFromStorage() {
@@ -45,13 +47,25 @@ function initLevels() {
   return initial
 }
 
+const PLAYED_KEY = 'kt_played_levels'
+
 const levels = ref(initLevels())
+const playedLevelIds = ref(new Set(JSON.parse(localStorage.getItem(PLAYED_KEY) || '[]')))
 
 const sortedLevels = computed(() =>
   [...levels.value].sort((a, b) => a.name.localeCompare(b.name, 'nl'))
 )
 
 export function useLevels() {
+  function markPlayed(id) {
+    playedLevelIds.value.add(id)
+    localStorage.setItem(PLAYED_KEY, JSON.stringify([...playedLevelIds.value]))
+  }
+
+  function isPlayed(id) {
+    return playedLevelIds.value.has(id)
+  }
+
   function addLevel(levelData) {
     const level = {
       id: generateId(),
@@ -80,5 +94,5 @@ export function useLevels() {
     return levels.value.find(l => l.id === id) || null
   }
 
-  return { levels, sortedLevels, addLevel, updateLevel, deleteLevel, getLevel }
+  return { levels, sortedLevels, addLevel, updateLevel, deleteLevel, getLevel, markPlayed, isPlayed }
 }

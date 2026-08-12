@@ -18,6 +18,9 @@ export const t = {
   addProfile: 'Nieuw profiel',
   deleteProfile: 'Profiel verwijderen',
   deleteProfileConfirm: 'Weet je zeker dat je dit profiel wilt verwijderen?',
+  profileRole: 'Type profiel',
+  roleChild: 'Kind',
+  roleParent: 'Ouder',
   editProfile: 'Profiel bewerken',
 
   // AddProfileModal
@@ -55,6 +58,11 @@ export const t = {
   questionCount: 'Aantal vragen',
   atLeastOneOperator: 'Kies minstens één bewerking',
   atLeastOneDigit: 'Kies minstens één cijfer',
+  resultConstraints: 'Uitkomst',
+  onlyPositiveResults: 'Alleen positief',
+  onlyIntegerResults: 'Alleen gehele getallen',
+  last5Runs: 'Gemiddelde (laatste 5 runs)',
+  avgTotalTime: 'Gem. totaaltijd',
 
   // MathExerciseView
   question: 'Vraag',
@@ -66,7 +74,9 @@ export const t = {
   totalTime: 'Totale tijd',
   avgTimePerQuestion: 'Gemiddeld per vraag',
   correctAnswers: 'Goede antwoorden',
-  backToLevels: 'Terug naar levels',
+  backToLevels: 'Levels',
+  repeatLevel: 'Herhalen',
+  nextLevel: 'Volgend level',
   seconds: 's',
   minutes: 'm',
 

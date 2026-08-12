@@ -72,8 +72,8 @@ function selectProfile(profile) {
   router.push({ name: 'exercises', params: { profileId: profile.id } })
 }
 
-function onAddProfile(name) {
-  addProfile(name)
+function onAddProfile({ name, role }) {
+  addProfile(name, role)
   showAddModal.value = false
 }
 

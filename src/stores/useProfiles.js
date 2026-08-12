@@ -22,8 +22,8 @@ function generateId() {
 const profiles = ref(loadFromStorage())
 
 export function useProfiles() {
-  function addProfile(name) {
-    const profile = { id: generateId(), name: name.trim() }
+  function addProfile(name, role = 'child') {
+    const profile = { id: generateId(), name: name.trim(), role }
     profiles.value.push(profile)
     saveToStorage(profiles.value)
     return profile

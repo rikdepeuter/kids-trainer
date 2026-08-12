@@ -58,6 +58,23 @@
         />
       </div>
 
+      <!-- Result constraints -->
+      <div class="field">
+        <label class="field-label">{{ t.resultConstraints }}</label>
+        <div class="toggle-group">
+          <button
+            class="toggle-btn"
+            :class="{ active: form.onlyPositiveResults }"
+            @click="form.onlyPositiveResults = !form.onlyPositiveResults"
+          >{{ t.onlyPositiveResults }}</button>
+          <button
+            class="toggle-btn"
+            :class="{ active: form.onlyIntegerResults }"
+            @click="form.onlyIntegerResults = !form.onlyIntegerResults"
+          >{{ t.onlyIntegerResults }}</button>
+        </div>
+      </div>
+
       <div class="modal-actions">
         <button class="btn-ghost" @click="$emit('cancel')">{{ t.cancel }}</button>
         <button class="btn-primary" @click="submit">{{ t.save }}</button>
@@ -90,6 +107,8 @@ const form = reactive({
   operators: props.level?.operators ? [...props.level.operators] : ['+', '-', '*', '/'],
   digits: props.level?.digits ? [...props.level.digits] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
   questionCount: props.level?.questionCount ?? 20,
+  onlyPositiveResults: props.level?.onlyPositiveResults ?? true,
+  onlyIntegerResults: props.level?.onlyIntegerResults ?? true,
 })
 
 const errors = reactive({ name: '', operators: '', digits: '' })
@@ -134,6 +153,8 @@ function submit() {
     operators: [...form.operators],
     digits: [...form.digits].sort((a, b) => a - b),
     questionCount: Math.max(1, Math.min(100, form.questionCount || 20)),
+    onlyPositiveResults: form.onlyPositiveResults,
+    onlyIntegerResults: form.onlyIntegerResults,
   })
 }
 </script>

@@ -3,7 +3,7 @@
     <div class="screen-header">
       <button class="back-btn" @click="router.push({ name: 'exercises', params: { profileId } })">←</button>
       <h1 class="screen-title">{{ t.chooselevel }}</h1>
-      <button class="btn-primary add-btn" @click="showAddModal = true">+ {{ t.addLevel }}</button>
+      <button v-if="isParent" class="btn-primary add-btn" @click="showAddModal = true">+ {{ t.addLevel }}</button>
     </div>
 
     <div class="screen-body">
@@ -13,6 +13,8 @@
           :key="level.id"
           :level="level"
           :is-last-used="lastUsedLevelId === level.id"
+          :played="isPlayed(level.id)"
+          :is-parent="isParent"
           @play="playLevel(level)"
           @stats="goStats(level)"
           @edit="openEdit(level)"
@@ -53,6 +55,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { t } from '../i18n/nl.js'
 import { useLevels } from '../stores/useLevels.js'
 import { usePreferences } from '../stores/usePreferences.js'
+import { useProfiles } from '../stores/useProfiles.js'
 import LevelCard from '../components/LevelCard.vue'
 import LevelEditorModal from '../components/LevelEditorModal.vue'
 
@@ -61,8 +64,11 @@ const route = useRoute()
 const profileId = route.params.profileId
 const EXERCISE_ID = 'rekenen'
 
-const { sortedLevels, addLevel, updateLevel, deleteLevel } = useLevels()
+const { sortedLevels, addLevel, updateLevel, deleteLevel, isPlayed } = useLevels()
 const { getLastUsedLevel, setLastUsedLevel } = usePreferences()
+const { getProfile } = useProfiles()
+
+const isParent = computed(() => getProfile(profileId)?.role === 'parent')
 
 const lastUsedLevelId = computed(() => getLastUsedLevel(profileId, EXERCISE_ID))
 
